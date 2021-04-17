@@ -13,8 +13,6 @@ function promptcash_Config() {
     );
 }
 
-
-
 function promptcash_getRandomString() {
     $chars = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     $max = strlen($chars)-1;
@@ -42,20 +40,13 @@ function promptcash_link($params) {
 	$fields = array(
 		'cmd' => '_pay_auto',
 
-		//same as token below
 		'token' => $params['token'],
 		'reset' => '1',
 		'invoice' => $params['invoiceid'],
-		'amountf' => $params['amount'],
 		'clientid' => $params['clientdetails']['id'],
 		'email' => $params['clientdetails']['email'],
 		'first_name' => $params['clientdetails']['firstname'],
 		'last_name' => $params['clientdetails']['lastname'],
-//		'success_url' => $params['systemurl'],
-//		'cancel_url' => $params['systemurl'],
-	//	'tx_id' => $params['invoiceid'],
-
-
 	    'tx_id' => $rand_string . '_' . $params['clientdetails']['id'] . '_' . $params['invoiceid'] . '_' . $hash, 
 
 
@@ -80,7 +71,8 @@ function promptcash_link($params) {
 		$code = '<form name="prompt-cash-form" action="https://prompt.cash/pay" method="get">';
         foreach ($fields as $n => $v) {
                 $code .= '<input type="hidden" name="'.$n.'" value="'.htmlspecialchars($v).'" />';
-echo $n ." ". $v."<br>";
+				//Uncomment for debugging on viewinvoice.php 
+				//echo $n ." ". $v."<br>";
         }
   
 		//$code .=    '<input type="hidden" name="tx_id" value="'.$params['invoiceid'].$discount.'">';
