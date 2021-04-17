@@ -1,8 +1,10 @@
 <?php
 // This file gets called when the payment status changes (paid or expired).
 
-//todo fill $message var
-//	fix discount percent, check for null field for no discount etc.
+//todo
+// fill $message var
+// fix discount percent, check for null field for no discount etc.
+// remove unused client_id or other unused vars
 
 include("../../../init.php"); 
 include("../../../includes/functions.php");
@@ -20,7 +22,7 @@ $secretKey = $GATEWAY['ipn_secret'];
 
 // The content type to respond is ignored by Prompt.Cash but you should return HTTP Status Code 200
 header('Content-Type: text/plain; charset=UTF-8');
-echo "okz"; // any response is fine (ignored by Prompt.Cash)
+echo "ok"; // any response is fine (ignored by Prompt.Cash)
 
 // Read the application/json POST data.
 // Afterwards you can access JSON variables like $post['payment']['status']
@@ -32,8 +34,6 @@ if (empty($post)) {
     echo "no data received";
 }
 
-
-
 $crypto_txn_id = $post['payment']['hash'];
 $payment_id = $post['payment']['tx_id'];
 $client_id = explode('_', $payment_id)[1];
@@ -43,17 +43,19 @@ $amount_crypto = $post['payment']['amount_crypto'];
 $amount_fiat = $post['payment']['amount_fiat'];
 $currency = $post['payment']['fiat_currency'];
 
-//debugging to whmcs Gateway Log
-//	logTransaction($gatewaymodule, $hash, "Error Log: ".$message);
+// Enable debugging to WHMCS Gateway Transaction Log
+//	logTransaction($gatewaymodule, $payment_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
 
 
 // check if the payment is complete
 if ($post['token'] === $secretKey) { // prevent spoofing
-
+	
+	// Make sure invoice exists in WHMCS
 	$invoice_id = checkCbInvoiceID($invoice_id, $gatewaymodule);
 
-
+	// Create a hash
 	$hash2 = md5($invoice_id . $amount_fiat . $secretKey);
+	// Compare created hash to data in post and secret key
 	if ($hash != $hash2) {
 		logTransaction($gatewaymodule, 'Invoice: ' . $invoice_id . ' Amount: ' . $amount_fiat . ' Hash1: ' . $hash . ' Hash2: ' . $hash2, "Error: Hash Verification Failure");
 		return 'Hash Verification Failure';
@@ -99,6 +101,7 @@ function handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id,
 	return "Payment has been received.";
 }
 
+// Add the payment to WHMCS and log the transaction in WHMCS
 function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $payment_id, $client_id) {
 
 	$postData = array(
@@ -120,9 +123,9 @@ function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amo
 
 
 //this only works if web server has write access to the enclosing directory 
-// Write the callback JSON to a file for debugging. You can remove this for production.
-if (file_put_contents("./callback-payment.json", json_encode($post)) === false)
-   echo "error writing callback file";
-else
-    echo "written callback";
+// Write the callback JSON to a file for debugging. You can comment/remove this for production.
+//if (file_put_contents("./callback-payment.json", json_encode($post)) === false)
+//   echo "error writing callback file";
+//else
+//    echo "written callback";
 ?>
