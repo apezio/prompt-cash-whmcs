@@ -2,9 +2,12 @@
 // This file gets called when the payment status changes (paid or expired).
 
 //todo
-// fill $message var
 // fix discount percent, check for null field for no discount etc.
 // remove unused client_id or other unused vars
+// Payment Method is empty in the WHMCS transaction list
+// discount doesnt work because whmcs wont mark as paid if balance isnt paid in full
+//   So can either add a negative line item to the invoice for the difference, or add a credit instead.
+// if adding a credit, client should be apply to apply it right away to the invoice.
 
 include("../../../init.php"); 
 include("../../../includes/functions.php");
@@ -35,16 +38,16 @@ if (empty($post)) {
 }
 
 $crypto_txn_id = $post['payment']['hash'];
-$payment_id = $post['payment']['tx_id'];
-$client_id = explode('_', $payment_id)[1];
-$invoice_id = explode('_', $payment_id)[2];
-$hash = explode('_', $payment_id)[3];
+$whmcs_txn_id = $post['payment']['tx_id'];
+$client_id = explode('_', $whmcs_txn_id)[1];
+$invoice_id = explode('_', $whmcs_txn_id)[2];
+$hash = explode('_', $whmcs_txn_id)[3];
 $amount_crypto = $post['payment']['amount_crypto'];
 $amount_fiat = $post['payment']['amount_fiat'];
 $currency = $post['payment']['fiat_currency'];
 
 // Enable debugging to WHMCS Gateway Transaction Log
-//	logTransaction($gatewaymodule, $payment_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
+//	logTransaction($gatewaymodule, $whmcs_txn_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
 
 
 // check if the payment is complete
@@ -63,7 +66,7 @@ if ($post['token'] === $secretKey) { // prevent spoofing
 
     if ($post['payment']['status'] === 'PAID') {
         // Payment complete. Update your database and ship your order.
-		return handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $payment_id, $currency, $gatewaymodule, $client_id);
+		return handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $whmcs_txn_id, $currency, $gatewaymodule, $client_id);
 
     }
     else if ($post['payment']['status'] === 'EXPIRED') {
@@ -74,17 +77,17 @@ return;
 
 
 
-function handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $payment_id, $currency, $gatewaymodule, $client_id) {
-	global $currency_symbol;
+function handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $whmcs_txn_id, $currency, $gatewaymodule, $client_id) {
 	
 	//check if unique transaction already exists in WHMCS
-	$record = Capsule::table('tblaccounts')->where('transid', $payment_id)->get();
+	$record = Capsule::table('tblaccounts')->where('transid', $whmcs_txn_id)->get();
 	$transaction_exists = $record[0]->transid;
 	if (!$transaction_exists) {
 		//check one more time then add the payment if the transaction has not been added.
-		checkCbTransID($payment_id);
-		add_payment("AddInvoicePayment", $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $payment_id, $client_id);
+		checkCbTransID($whmcs_txn_id);
+		add_payment("AddInvoicePayment", $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $whmcs_txn_id, $client_id);
 	}
+	// check if invoice has been marked as paid, if not, mark Paid.  WHMCS normally wont mark as Paid if the amount isnt at least exactly the invoice due amount, which would stop service deployments due to WHCMS thinking a few cents were missing.
 	$command = 'GetInvoice';
 	$postData = array(
 		'invoiceid' => $invoice_id,
@@ -102,7 +105,7 @@ function handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id,
 }
 
 // Add the payment to WHMCS and log the transaction in WHMCS
-function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $payment_id, $client_id) {
+function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $whmcs_txn_id, $client_id) {
 
 	$postData = array(
 		'action' => $command,
@@ -111,12 +114,12 @@ function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amo
 		'gateway' => $gatewaymodule,
 		'amount_fiat' => $amount_fiat,
 		'amount_crypto' => $amount_crypto,
-		'paymentid' => $payment_id,
+		'paymentid' => $whmcs_txn_id,
 	);
 	// Add the invoice payment - either line below would work
 	// $results = localAPI($command, $postData, $adminUsername);
     addInvoicePayment($invoice_id,$crypto_txn_id,$amount_fiat,$gatewaymodule);
-	logTransaction($gatewaymodule, $postData, "Success: ".$message);
+	logTransaction($gatewaymodule, $postData, "Success");
 	
 }
 
