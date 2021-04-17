@@ -9,7 +9,8 @@ function promptcash_Config() {
      "FriendlyName" => array("Type" => "System", "Value"=>"Prompt.Cash"),
      "token" => array("FriendlyName" => "Public Token", "Type" => "text", "Size" => "32", ),
      "ipn_secret" => array("FriendlyName" => "Secret Token", "Type" => "password", "Size" => "32", ),
-     "discount_percentage" => array("FriendlyName" => "Discount Percentage", "Type" => "text", "Size" => "3", )
+	//1 for full price. 0.95 to give a 5% discount, etc
+     "discount_percentage" => array("FriendlyName" => "Discount Percentage", "Type" => "text", "Size" => "3", "Value"=>"1" )
     );
 }
 
