@@ -104,8 +104,9 @@ function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amo
 		'amount_fiat' => $amount_fiat,
 		'amount_crypto' => $amount_crypto,
 		'paymentid' => $whmcs_txn_id,
+		'fee' => '',
 	);
-    addInvoicePayment($invoice_id,$crypto_txn_id,$amount_fiat,$gatewaymodule);
+    addInvoicePayment($invoice_id,$crypto_txn_id,$amount_fiat, ' ' ,$gatewaymodule);
 	logTransaction($gatewaymodule, $postData, "Success");
 	
 }
