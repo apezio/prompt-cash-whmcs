@@ -32,7 +32,7 @@ function promptcash_link($params) {
 	$gateway = getGatewayVariables($gatewaymodule);
 	if(!$gateway["type"]) die("Module not activated");
 
-	$discount = $params['amount'];
+	$discount = money_format('%i', $params['amount']);
 // disable until finished
 //	$discount = $params['amount'] * $params['discount_percentage'];
 
