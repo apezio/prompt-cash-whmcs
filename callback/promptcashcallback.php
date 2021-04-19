@@ -34,11 +34,11 @@ $client_id = explode('_', $whmcs_txn_id)[1];
 $invoice_id = explode('_', $whmcs_txn_id)[2];
 $hash = explode('_', $whmcs_txn_id)[3];
 $amount_crypto = $post['payment']['amount_crypto'];
-$amount_fiat = $post['payment']['amount_fiat'];
+$amount_fiat = money_format('%i', $post['payment']['amount_fiat']);
 $currency = $post['payment']['fiat_currency'];
 
 // Enable debugging to WHMCS Gateway Transaction Log
-//logTransaction($gatewaymodule, $whmcs_txn_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
+//logTransaction($gatewaymodule, $whmcs_txn_id, "If something went wrong, check web server logs, ssl cert, or for other issues");
 
 
 // Check if the payment is complete
