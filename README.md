@@ -14,7 +14,7 @@ Instructions:
 6) Grab your API credentials from https://prompt.cash/account and fill in the values for Public Token and Secret Token in WHMCS.
 
 Upcoming features:
-* Ability to give a discount when payments are made with this module.
+* Give a discount when paying with Bitcoin Cash
 * ???
 
 
