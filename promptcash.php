@@ -9,7 +9,7 @@ function promptcash_Config() {
      "FriendlyName" => array("Type" => "System", "Value"=>"Prompt.Cash"),
      "token" => array("FriendlyName" => "Public Token", "Type" => "text", "Size" => "32", ),
      "ipn_secret" => array("FriendlyName" => "Secret Token", "Type" => "password", "Size" => "32", ),
-	//1 for full price. 0.95 to give a 5% discount, etc
+	//1 for full price. 0.95 to give a 5% discount, etc (currently disabled)
      "discount_percentage" => array("FriendlyName" => "Discount Percentage", "Type" => "text", "Size" => "3", "Value"=>"1" )
     );
 }
@@ -32,7 +32,10 @@ function promptcash_link($params) {
 	$gateway = getGatewayVariables($gatewaymodule);
 	if(!$gateway["type"]) die("Module not activated");
 
-	$discount = $params['amount'] * $params['discount_percentage'];
+	$discount = $params['amount'];
+// disable until finished
+//	$discount = $params['amount'] * $params['discount_percentage'];
+
 	$rand_string = promptcash_getRandomString();
 
 	$secretKey = $gateway['ipn_secret'];
@@ -40,7 +43,6 @@ function promptcash_link($params) {
 
 	$fields = array(
 		'cmd' => '_pay_auto',
-
 		'token' => $params['token'],
 		'reset' => '1',
 		'invoice' => $params['invoiceid'],
@@ -49,37 +51,29 @@ function promptcash_link($params) {
 		'first_name' => $params['clientdetails']['firstname'],
 		'last_name' => $params['clientdetails']['lastname'],
 	    'tx_id' => $rand_string . '_' . $params['clientdetails']['id'] . '_' . $params['invoiceid'] . '_' . $hash, 
-
-
-
 		'amount' => $discount,
-
-//    'amount' => sprintf("%.2f", 0.01), // make sure to use string with fixed decimals to avoid floating point inconsistency
 		'currency' => $params['currency'],
 	    'desc' => $params["description"],
 
-    // the URL to send the customer back to after payment
+	    // the URL to send the customer back to after payment
 		'return' =>  $params['systemurl'] . '/viewinvoice.php?id=' . $params['invoiceid'],
 
-    // Where to notify you of changes in the payment status (expired or paid).
-    // This must be on a public domain. The callback will not work when you are testing on localhost!
+    	// Where to notify you of changes in the payment status (expired or paid).
+	    // This must be on a public domain. The callback will not work when you are testing on localhost!
+		// Requires a valid SSL certificate
 		'callback' => $params['systemurl'] .'/modules/gateways/callback/promptcashcallback.php',
-
-
 	    'time' => time(),
     	'signature' => '',
-);
-		$code = '<form name="prompt-cash-form" action="https://prompt.cash/pay" method="get">';
-        foreach ($fields as $n => $v) {
-                $code .= '<input type="hidden" name="'.$n.'" value="'.htmlspecialchars($v).'" />';
-				//Uncomment for debugging on viewinvoice.php 
-				//echo $n ." ". $v."<br>";
-        }
-  
-		//$code .=    '<input type="hidden" name="tx_id" value="'.$params['invoiceid'].$discount.'">';
-		$code .=    '<button type="submit" class="btn btn-primary">Pay with Bitcoin Cash (BCH)</button>';
-		$code .= '</form>';
 
-
+	);
+	// Create the payment form and button
+	$code = '<form name="prompt-cash-form" action="https://prompt.cash/pay" method="get">';
+	foreach ($fields as $n => $v) {
+		$code .= '<input type="hidden" name="'.$n.'" value="'.htmlspecialchars($v).'" />';
+		//Uncomment for debugging on viewinvoice.php 
+		//echo $n ." ". $v."<br>";
+	}
+	$code .=    '<button type="submit" class="btn btn-primary">Pay with Bitcoin Cash (BCH)</button>';
+	$code .= '</form>';
 	return $code;
 }
