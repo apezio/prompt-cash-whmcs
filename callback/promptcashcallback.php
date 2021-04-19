@@ -1,21 +1,12 @@
 <?php
 // This file gets called when the payment status changes (paid or expired).
 
-//todo
-// fix discount percent, check for null field for no discount etc.
-// remove unused client_id or other unused vars
-// Payment Method is empty in the WHMCS transaction list
-// discount doesnt work because whmcs wont mark as paid if balance isnt paid in full
-//   So can either add a negative line item to the invoice for the difference, or add a credit instead.
-// if adding a credit, client should be apply to apply it right away to the invoice.
-
 include("../../../init.php"); 
 include("../../../includes/functions.php");
 include("../../../includes/gatewayfunctions.php");
 include("../../../includes/invoicefunctions.php");
 
 use Illuminate\Database\Capsule\Manager as Capsule;
-
 
 $gatewaymodule = "promptcash"; # Enter your gateway module name here replacing template
 $GATEWAY = getGatewayVariables($gatewaymodule);
@@ -47,10 +38,10 @@ $amount_fiat = $post['payment']['amount_fiat'];
 $currency = $post['payment']['fiat_currency'];
 
 // Enable debugging to WHMCS Gateway Transaction Log
-//	logTransaction($gatewaymodule, $whmcs_txn_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
+//logTransaction($gatewaymodule, $whmcs_txn_id, "Error: Something went wrong. Check web server logs, ssl cert, or for other issues");
 
 
-// check if the payment is complete
+// Check if the payment is complete
 if ($post['token'] === $secretKey) { // prevent spoofing
 	
 	// Make sure invoice exists in WHMCS
@@ -63,31 +54,29 @@ if ($post['token'] === $secretKey) { // prevent spoofing
 		logTransaction($gatewaymodule, 'Invoice: ' . $invoice_id . ' Amount: ' . $amount_fiat . ' Hash1: ' . $hash . ' Hash2: ' . $hash2, "Error: Hash Verification Failure");
 		return 'Hash Verification Failure';
 	}
-
+	// Prompt.cash is doing most of the work here, letting us know if the invoice balance is paid in full
     if ($post['payment']['status'] === 'PAID') {
         // Payment complete. Update your database and ship your order.
 		return handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $whmcs_txn_id, $currency, $gatewaymodule, $client_id);
-
     }
     else if ($post['payment']['status'] === 'EXPIRED') {
-        // The customer did not pay in time. You can cancel this order or send him a new payment link.
+        // The customer did not pay in time. You can cancel this order or send a new payment link.
     }
 return;
 }
 
 
-
 function handle_whmcs($invoice_id, $amount_crypto, $amount_fiat, $crypto_txn_id, $whmcs_txn_id, $currency, $gatewaymodule, $client_id) {
 	
-	//check if unique transaction already exists in WHMCS
+	// Check if transaction already exists in WHMCS
 	$record = Capsule::table('tblaccounts')->where('transid', $whmcs_txn_id)->get();
 	$transaction_exists = $record[0]->transid;
 	if (!$transaction_exists) {
-		//check one more time then add the payment if the transaction has not been added.
+		// Credit the payment to clients invoice
 		checkCbTransID($whmcs_txn_id);
 		add_payment("AddInvoicePayment", $invoice_id, $crypto_txn_id, $gatewaymodule, $amount_fiat, $amount_crypto, $whmcs_txn_id, $client_id);
 	}
-	// check if invoice has been marked as paid, if not, mark Paid.  WHMCS normally wont mark as Paid if the amount isnt at least exactly the invoice due amount, which would stop service deployments due to WHCMS thinking a few cents were missing.
+	// check if invoice has been marked as fully paid, if not, mark paid.  WHMCS normally wont mark as Paid if the amount isnt at least invoice due amount, which can sometimes stop service auto-deployments due to WHCMS waiting for those few missing sats.
 	$command = 'GetInvoice';
 	$postData = array(
 		'invoiceid' => $invoice_id,
@@ -116,8 +105,6 @@ function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amo
 		'amount_crypto' => $amount_crypto,
 		'paymentid' => $whmcs_txn_id,
 	);
-	// Add the invoice payment - either line below would work
-	// $results = localAPI($command, $postData, $adminUsername);
     addInvoicePayment($invoice_id,$crypto_txn_id,$amount_fiat,$gatewaymodule);
 	logTransaction($gatewaymodule, $postData, "Success");
 	
@@ -125,7 +112,7 @@ function add_payment($command, $invoice_id, $crypto_txn_id, $gatewaymodule, $amo
 
 
 
-//this only works if web server has write access to the enclosing directory 
+// Note: this only works if web server has write access to the enclosing directory 
 // Write the callback JSON to a file for debugging. You can comment/remove this for production.
 //if (file_put_contents("./callback-payment.json", json_encode($post)) === false)
 //   echo "error writing callback file";
