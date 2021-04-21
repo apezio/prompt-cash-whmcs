@@ -26,8 +26,6 @@ function promptcash_getRandomString() {
 
 
 function promptcash_link($params) {
-
-
 	$gatewaymodule = "promptcash"; # Enter your gateway module name here replacing template
 	$gateway = getGatewayVariables($gatewaymodule);
 	if(!$gateway["type"]) die("Module not activated");
@@ -50,22 +48,22 @@ function promptcash_link($params) {
 		'email' => $params['clientdetails']['email'],
 		'first_name' => $params['clientdetails']['firstname'],
 		'last_name' => $params['clientdetails']['lastname'],
-	    'tx_id' => $rand_string . '_' . $params['clientdetails']['id'] . '_' . $params['invoiceid'] . '_' . $hash, 
+		'tx_id' => $rand_string . '_' . $params['clientdetails']['id'] . '_' . $params['invoiceid'] . '_' . $hash, 
 		'amount' => $discount,
 		'currency' => $params['currency'],
-	    'desc' => $params["description"],
+		'desc' => $params["description"],
 
-	    // the URL to send the customer back to after payment
+		// the URL to send the customer back to after payment
 		'return' =>  $params['systemurl'] . '/viewinvoice.php?id=' . $params['invoiceid'],
 
-    	// Where to notify you of changes in the payment status (expired or paid).
-	    // This must be on a public domain. The callback will not work when you are testing on localhost!
+		// Where to notify you of changes in the payment status (expired or paid).
+		// This must be on a public domain. The callback will not work when you are testing on localhost!
 		// Requires a valid SSL certificate
 		'callback' => $params['systemurl'] .'/modules/gateways/callback/promptcashcallback.php',
-	    'time' => time(),
-    	'signature' => '',
-
+		'time' => time(),
+		'signature' => '',
 	);
+
 	// Create the payment form and button
 	$code = '<form name="prompt-cash-form" action="https://prompt.cash/pay" method="get">';
 	foreach ($fields as $n => $v) {
