@@ -13,8 +13,8 @@ Instructions:
 5) If you aren't already taken the to module config page, click Manage Existing Gateways in WHMCS and scroll to the bottom to find Prompt.Cash
 6) Grab your API credentials from https://prompt.cash/account and fill in the values for Public Token and Secret Token in WHMCS.
 
-Upcoming features:
-* Give a discount when paying with Bitcoin Cash
+~~Upcoming features:~~
+Can now specifiy a discount when using this gateway module. In the module config enter the discount as a percent. i.e. '10%' or '10'.  Use 0 for no discount.
 * ???
 
 
